@@ -18,4 +18,9 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MailScheduler.Application\MailScheduler.Application.csproj" />
+    <ProjectReference Include="..\MailScheduler.Infrastructure\MailScheduler.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
