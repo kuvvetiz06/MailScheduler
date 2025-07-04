@@ -1,12 +1,24 @@
+using Hangfire;
+using MailScheduler.Application.Interfaces;
 using MailScheduler.Infrastructure.Extensions;
+using MailScheduler.Infrastructure.Jobs;
+using MailScheduler.Infrastructure.Services;
+using MailScheduler.Infrastructure.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
+// 1) Altyapýyý, DbContext ve repo'larý ekle
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// 2) Hangfire servisi
+builder.Services.AddHangfire(config =>
+    config.UseSqlServerStorage(
+      builder.Configuration.GetConnectionString("HangfireConnection")));
+builder.Services.AddHangfireServer();
+
+// 3) SMTP EmailSender (MailKit tabanlý)
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 
 
 var app = builder.Build();
@@ -18,29 +30,20 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// 4) Hangfire Dashboard ve Server middleware
+app.UseHangfireDashboard();       // http://<host>/hangfire
+app.UseHangfireServer();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// 5) Recurring job tanýmý (her gün 18:00)
+RecurringJob.AddOrUpdate<SendDailyEmailJob>(
+  "daily-mail-job",
+  job => job.ExecuteAsync(),
+  Cron.Daily(18, 0));
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+app.MapControllers();
+app.Run();
+
+
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
