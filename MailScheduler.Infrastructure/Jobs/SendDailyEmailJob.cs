@@ -14,39 +14,39 @@ namespace MailScheduler.Infrastructure.Jobs
     public class SendDailyEmailJob : ISendDailyEmailJob
     {
         private readonly IEmailTemplateRepository _templateRepo;
+        private readonly IRecipientRepository _recipientRepo;
         private readonly IEmailLogRepository _logRepo;
         private readonly IEmailSender _sender;
 
         public SendDailyEmailJob(
             IEmailTemplateRepository templateRepo,
+            IRecipientRepository recipientRepo,
             IEmailLogRepository logRepo,
             IEmailSender sender)
         {
             _templateRepo = templateRepo;
+            _recipientRepo = recipientRepo;
             _logRepo = logRepo;
             _sender = sender;
         }
 
         public async Task ExecuteAsync()
         {
-            // Örnek şablon isimleri
             var templateNames = new[] { "TemplateA", "TemplateB", "TemplateC" };
+            var recipients = await _recipientRepo.GetAllAsync();
+
             foreach (var name in templateNames)
             {
                 var template = await _templateRepo.GetByNameAsync(name);
-                if (template == null)
-                    continue;
+                if (template == null) continue;
 
-                // TODO: Buraya gerçek alıcı sorgusunu ekleyin.
-                var recipients = new List<string> { "user1@example.com", "user2@example.com" };
-
-                foreach (var recipient in recipients)
+                foreach (var r in recipients)
                 {
                     bool success = false;
                     string? error = null;
                     try
                     {
-                        await _sender.SendEmailAsync(recipient, template.Subject, template.Body);
+                        await _sender.SendEmailAsync(r.EmailAddress, template.Subject, template.Body);
                         success = true;
                     }
                     catch (Exception ex)
@@ -54,7 +54,7 @@ namespace MailScheduler.Infrastructure.Jobs
                         error = ex.Message;
                     }
 
-                    var log = new EmailLog(recipient, name, success, error);
+                    var log = new EmailLog(r.EmailAddress, name, success, error);
                     await _logRepo.AddAsync(log);
                 }
             }

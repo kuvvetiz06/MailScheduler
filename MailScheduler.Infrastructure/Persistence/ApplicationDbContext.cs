@@ -15,7 +15,7 @@ namespace MailScheduler.Infrastructure.Persistence
     {
         public DbSet<EmailTemplate> EmailTemplates { get; set; } = null!;
         public DbSet<EmailLog> EmailLogs { get; set; } = null!;
-
+        public DbSet<Recipient> Recipients { get; set; } = null!;
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
         {
@@ -28,10 +28,12 @@ namespace MailScheduler.Infrastructure.Persistence
             // Soft-delete global filters
             modelBuilder.Entity<EmailTemplate>().HasQueryFilter(e => !e.IsDeleted);
             modelBuilder.Entity<EmailLog>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<Recipient>().HasQueryFilter(r => !r.IsDeleted);
 
             // Apply entity configurations
             modelBuilder.ApplyConfiguration(new EmailTemplateConfiguration());
             modelBuilder.ApplyConfiguration(new EmailLogConfiguration());
+            modelBuilder.ApplyConfiguration(new RecipientConfiguration());
         }
     }
 }

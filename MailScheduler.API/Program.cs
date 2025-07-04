@@ -1,4 +1,5 @@
 using Hangfire;
+using MailScheduler.Application.IJobs;
 using MailScheduler.Application.Interfaces;
 using MailScheduler.Infrastructure.Extensions;
 using MailScheduler.Infrastructure.Jobs;
@@ -19,7 +20,7 @@ builder.Services.AddHangfireServer();
 // 3) SMTP EmailSender (MailKit tabanlý)
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
-
+builder.Services.AddScoped<ISendDailyEmailJob, SendDailyEmailJob>();
 
 var app = builder.Build();
 
@@ -35,10 +36,10 @@ app.UseHangfireDashboard();       // http://<host>/hangfire
 app.UseHangfireServer();
 
 // 5) Recurring job tanýmý (her gün 18:00)
-RecurringJob.AddOrUpdate<SendDailyEmailJob>(
-  "daily-mail-job",
-  job => job.ExecuteAsync(),
-  Cron.Daily(18, 0));
+RecurringJob.AddOrUpdate<ISendDailyEmailJob>(
+    "daily-mail-job",
+    job => job.ExecuteAsync(),
+    Cron.Daily(18, 0));
 
 app.MapControllers();
 app.Run();
