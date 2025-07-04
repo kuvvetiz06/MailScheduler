@@ -1,0 +1,6 @@
+@MailScheduler.API_HostAddress = http://localhost:5104
+
+GET {{MailScheduler.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
