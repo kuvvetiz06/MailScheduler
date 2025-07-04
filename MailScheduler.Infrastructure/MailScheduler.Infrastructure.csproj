@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\MailScheduler.Application\MailScheduler.Application.csproj" />
+    <ProjectReference Include="..\MailScheduler.Domain\MailScheduler.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
