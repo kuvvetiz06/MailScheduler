@@ -52,3 +52,18 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# --- Visual Studio ---
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# --- VS arama/index cache dosyaları ---
+**/FileContentIndex/
+**/*.vsix
+
+# --- Build çıktı klasörleri ---
+bin/
+obj/
