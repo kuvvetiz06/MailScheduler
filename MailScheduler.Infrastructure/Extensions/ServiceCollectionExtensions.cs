@@ -1,4 +1,6 @@
-﻿using MailScheduler.Domain.Interfaces;
+﻿using MailScheduler.Application.Interfaces;
+using MailScheduler.Domain.Interfaces;
+using MailScheduler.Infrastructure.Data;
 using MailScheduler.Infrastructure.Persistence;
 using MailScheduler.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +22,7 @@ namespace MailScheduler.Infrastructure.Extensions
             services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
             services.AddScoped<IEmailLogRepository, EmailLogRepository>();
             services.AddScoped<IRecipientRepository, RecipientRepository>();
+            services.AddScoped<IDataSeeder, DatabaseSeeder>();
             return services;
         }
     }

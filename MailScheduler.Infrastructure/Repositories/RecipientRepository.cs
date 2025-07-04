@@ -15,6 +15,11 @@ namespace MailScheduler.Infrastructure.Repositories
         private readonly ApplicationDbContext _context;
         public RecipientRepository(ApplicationDbContext context) => _context = context;
 
+        public async Task AddAsync(Recipient recipient)
+        {
+            await _context.Recipients.AddAsync(recipient);
+            await _context.SaveChangesAsync();
+        }
         public async Task<IEnumerable<Recipient>> GetAllAsync() =>
             await _context.Recipients.ToListAsync();
     }

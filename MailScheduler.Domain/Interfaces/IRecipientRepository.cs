@@ -9,6 +9,7 @@ namespace MailScheduler.Domain.Interfaces
 {
     public interface IRecipientRepository
     {
+        Task AddAsync(Recipient r);
         Task<IEnumerable<Recipient>> GetAllAsync();
     }
 }

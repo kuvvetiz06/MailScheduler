@@ -5,6 +5,7 @@ using MailScheduler.Infrastructure.Extensions;
 using MailScheduler.Infrastructure.Jobs;
 using MailScheduler.Infrastructure.Services;
 using MailScheduler.Infrastructure.Settings;
+using MailScheduler.Application.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,11 @@ builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<ISendDailyEmailJob, SendDailyEmailJob>();
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
+    await seeder.SeedAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
