@@ -18,8 +18,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // 1) Altyapýyý, DbContext ve repo'larý ekle
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddScoped<IAttendanceRecordRepository, AttendanceRecordRepository>();
-builder.Services.AddScoped<ILeaveRecordRepository, LeaveRecordRepository>();
 builder.Services.AddScoped<ISendAttendanceReminderJob, SendAttendanceReminderJob>();
 // 2) Hangfire servisi
 builder.Services.AddHangfire(config =>
@@ -64,11 +62,10 @@ app.UseHangfireDashboard(
     });
 app.UseHangfireServer();
 
-// 5) Recurring job tanýmý (her gün 18:00)
-RecurringJob.AddOrUpdate<ISendDailyEmailJob>(
-    "daily-mail-job",
+// Haftalýk Cuma 18:00'de çalýþacak
+RecurringJob.AddOrUpdate<ISendAttendanceReminderJob>("attendance-reminder-job",
     job => job.ExecuteAsync(),
-    Cron.Daily(15, 0));
+    Cron.Weekly(DayOfWeek.Friday, 15, 0));
 
 app.MapControllers();
 app.Run();

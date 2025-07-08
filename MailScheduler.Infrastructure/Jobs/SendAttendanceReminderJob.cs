@@ -14,19 +14,16 @@ namespace MailScheduler.Infrastructure.Jobs
 {
     public class SendAttendanceReminderJob : ISendAttendanceReminderJob
     {
-        private readonly IAttendanceRecordRepository _attRepo;
-        private readonly ILeaveRecordRepository _leaveRepo;
+        private readonly IDailyAttendanceRepository _dailyRepo;
         private readonly IEmailLogRepository _logRepo;
         private readonly MailScheduler.Application.Interfaces.IEmailSender _sender;
 
         public SendAttendanceReminderJob(
-            IAttendanceRecordRepository attRepo,
-            ILeaveRecordRepository leaveRepo,
+            IDailyAttendanceRepository dailyRepo,
             IEmailLogRepository logRepo,
             MailScheduler.Application.Interfaces.IEmailSender sender)
         {
-            _attRepo = attRepo;
-            _leaveRepo = leaveRepo;
+            _dailyRepo = dailyRepo;
             _logRepo = logRepo;
             _sender = sender;
         }
@@ -34,24 +31,25 @@ namespace MailScheduler.Infrastructure.Jobs
         public async Task ExecuteAsync()
         {
             var (start, end) = WeekHelper.GetPreviousWorkWeek(DateTime.Today);
-            var attendance = await _attRepo.GetByDateRangeAsync(start, end);
-            var leaves = await _leaveRepo.GetByDateRangeAsync(start, end);
+            var records = await _dailyRepo.GetByDateRangeAsync(start, end);
             var days = Enumerable.Range(0, 5).Select(i => start.AddDays(i));
 
-            var employees = attendance.Select(a => a.IdentityId).Distinct();
+            var employees = records.Select(r => r.IdentityId).Distinct();
             foreach (var id in employees)
             {
                 foreach (var day in days)
                 {
-                    bool onLeave = leaves.Any(l => l.IdentityId == id && l.Date == day);
-                    bool present = attendance.Any(a => a.IdentityId == id && a.Date == day && a.IsTourniquet == 1);
+                    var rec = records.FirstOrDefault(r => r.IdentityId == id && r.Date.Date == day);
+                    bool onLeave = rec?.IsLeave ?? false;
+                    bool present = rec?.IsTourniquet ?? false;
+
                     if (!onLeave && !present)
                     {
                         var prev = await _logRepo.GetByEmployeeWeekAsync(id, start, (int)MailType.MissingAttendanceInitial);
                         var type = prev != null ? MailType.MissingAttendanceReminder : MailType.MissingAttendanceInitial;
-                        var email = /* fetch employee mail by id */ "user@example.com";
-                        var subject = "Haftalık Devamsızlık Hatırlatma";
-                        var body = $"{start:dd.MM.yyyy} - {end:dd.MM.yyyy} dönemi için {day:dd.MM.yyyy} günü işe gelmediniz. Lütfen izin formu doldurun veya İK'yı bilgilendirin.";
+                        var email = "user@example.com"; // map from id
+                        var subject = "Devamsızlık Hatırlatma";
+                        var body = $"{start:dd.MM.yyyy}-{end:dd.MM.yyyy} arasında {day:dd.MM.yyyy} günü gelmediniz.";
 
                         await _sender.SendEmailAsync(email, subject, body);
                         var log = new EmailLog(email, type.ToString(), true, null, id, (int)type, start, end);

@@ -21,7 +21,6 @@ namespace MailScheduler.Infrastructure.Extensions
 
             services.AddScoped<IEmailTemplateRepository, EmailTemplateRepository>();
             services.AddScoped<IEmailLogRepository, EmailLogRepository>();
-            services.AddScoped<IRecipientRepository, RecipientRepository>();
             services.AddScoped<IDataSeeder, DatabaseSeeder>();
             return services;
         }

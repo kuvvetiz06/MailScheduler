@@ -1,0 +1,23 @@
+﻿using MailScheduler.Domain.Entities;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MailScheduler.Infrastructure.Persistence.Configurations
+{
+    public class DailyAttendanceConfiguration : IEntityTypeConfiguration<DailyAttendance>
+    {
+        public void Configure(EntityTypeBuilder<DailyAttendance> builder)
+        {
+            builder.ToTable("DailyAttendances");
+            builder.Property(d => d.IdentityId).HasMaxLength(50).IsRequired();
+            builder.Property(d => d.Date).IsRequired();
+            builder.Property(d => d.IsTourniquet).IsRequired();
+            builder.Property(d => d.IsLeave).IsRequired();
+        }
+    }
+}

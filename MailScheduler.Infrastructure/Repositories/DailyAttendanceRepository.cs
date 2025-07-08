@@ -10,14 +10,14 @@ using System.Threading.Tasks;
 
 namespace MailScheduler.Infrastructure.Repositories
 {
-    public class AttendanceRecordRepository : IAttendanceRecordRepository
+    public class DailyAttendanceRepository : IDailyAttendanceRepository
     {
         private readonly ApplicationDbContext _context;
-        public AttendanceRecordRepository(ApplicationDbContext context) => _context = context;
+        public DailyAttendanceRepository(ApplicationDbContext context) => _context = context;
 
-        public async Task<IEnumerable<AttendanceRecord>> GetByDateRangeAsync(DateTime start, DateTime end) =>
-            await _context.AttendanceRecords
-                .Where(a => a.Date >= start && a.Date <= end)
+        public async Task<IEnumerable<DailyAttendance>> GetByDateRangeAsync(DateTime start, DateTime end) =>
+            await _context.DailyAttendances
+                .Where(d => d.Date >= start && d.Date <= end)
                 .ToListAsync();
     }
 }
