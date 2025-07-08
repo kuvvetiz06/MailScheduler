@@ -1,4 +1,5 @@
 using Hangfire;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using MailScheduler.Application.IJobs;
 using MailScheduler.Application.Interfaces;
@@ -7,6 +8,8 @@ using MailScheduler.Infrastructure.Extensions;
 using MailScheduler.Infrastructure.Jobs;
 using MailScheduler.Infrastructure.Services;
 using MailScheduler.Infrastructure.Settings;
+using MailScheduler.Domain.Interfaces;
+using MailScheduler.Infrastructure.Repositories;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,7 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // 1) Altyapýyý, DbContext ve repo'larý ekle
 builder.Services.AddInfrastructure(builder.Configuration);
-
+builder.Services.AddScoped<IAttendanceRecordRepository, AttendanceRecordRepository>();
+builder.Services.AddScoped<ILeaveRecordRepository, LeaveRecordRepository>();
+builder.Services.AddScoped<ISendAttendanceReminderJob, SendAttendanceReminderJob>();
 // 2) Hangfire servisi
 builder.Services.AddHangfire(config =>
     config.UseSqlServerStorage(

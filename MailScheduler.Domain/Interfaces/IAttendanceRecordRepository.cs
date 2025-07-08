@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 
 namespace MailScheduler.Domain.Interfaces
 {
-    public interface IEmailLogRepository
+    public interface IAttendanceRecordRepository
     {
-        Task AddAsync(EmailLog log);
-        Task<EmailLog?> GetByEmployeeWeekAsync(string identityId, DateTime periodStart, int mailTypeId);
+        Task<IEnumerable<AttendanceRecord>> GetByDateRangeAsync(DateTime start, DateTime end);
     }
 }
