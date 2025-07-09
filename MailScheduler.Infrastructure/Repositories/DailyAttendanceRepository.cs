@@ -15,9 +15,11 @@ namespace MailScheduler.Infrastructure.Repositories
         private readonly ApplicationDbContext _context;
         public DailyAttendanceRepository(ApplicationDbContext context) => _context = context;
 
-        public async Task<IEnumerable<DailyAttendance>> GetByDateRangeAsync(DateTime start, DateTime end) =>
-            await _context.DailyAttendances
-                .Where(d => d.Date >= start && d.Date <= end)
+        public async Task<IEnumerable<DailyAttendance>> GetByDateRangeAsync(DateTime start, DateTime end)
+        {
+            return await _context.DailyAttendances
+                .Where(d => d.Date >= start.Date && d.Date <= end.Date)
                 .ToListAsync();
+        }
     }
 }

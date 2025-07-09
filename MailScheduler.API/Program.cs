@@ -1,76 +1,39 @@
 using Hangfire;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-
 using MailScheduler.Application.IJobs;
-using MailScheduler.Application.Interfaces;
-using MailScheduler.Infrastructure.Authorization;
 using MailScheduler.Infrastructure.Extensions;
 using MailScheduler.Infrastructure.Jobs;
-using MailScheduler.Infrastructure.Services;
 using MailScheduler.Infrastructure.Settings;
 using MailScheduler.Domain.Interfaces;
 using MailScheduler.Infrastructure.Repositories;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddControllers();
-// 1) Altyapýyý, DbContext ve repo'larý ekle
+
+// Infrastructure: DbContext, repos and other services
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Add DailyAttendance repository and job
+builder.Services.AddScoped<IDailyAttendanceRepository, DailyAttendanceRepository>();
 builder.Services.AddScoped<ISendAttendanceReminderJob, SendAttendanceReminderJob>();
-// 2) Hangfire servisi
-builder.Services.AddHangfire(config =>
-    config.UseSqlServerStorage(
-        builder.Configuration.GetConnectionString("HangfireConnection")));
+
+// SMTP Email settings and sender
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.AddScoped<MailScheduler.Application.Interfaces.IEmailSender, MailScheduler.Infrastructure.Services.SmtpEmailSender>();
+
+// Hangfire configuration
+builder.Services.AddHangfire(cfg => cfg.UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection")));
 builder.Services.AddHangfireServer();
 
-// 3) SMTP EmailSender (MailKit tabanlý)
-builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
-builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
-builder.Services.AddScoped<ISendDailyEmailJob, SendDailyEmailJob>();
-
 var app = builder.Build();
-//using (var scope = app.Services.CreateScope())
-//{
-//    var seeder = scope.ServiceProvider.GetRequiredService<IDataSeeder>();
-//    await seeder.SeedAsync();
-//}
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.UseHttpsRedirection();
-// 4) Hangfire Dashboard ve Server middleware
-// Hangfire Dashboard with Basic Auth
-var hangfireUser = builder.Configuration["HangfireSettings:UserName"];
-var hangfirePass = builder.Configuration["HangfireSettings:Password"];
-var hangfireAppPath = builder.Configuration["HangfireSettings:BackToSiteURL"];
-app.UseHangfireDashboard(
-    pathMatch: "/hangfire",
-    options: new DashboardOptions
-    {
-        DashboardTitle = "Mail Scheduler Job Services",
-        AppPath = hangfireAppPath,
-        Authorization = new[]
-        {
-            new HangfireBasicAuthFilter(hangfireUser!, hangfirePass!)
-        }
-    });
-app.UseHangfireServer();
-
-// Haftalýk Cuma 18:00'de çalýþacak
-RecurringJob.AddOrUpdate<ISendAttendanceReminderJob>("attendance-reminder-job",
+// Configure Hangfire Dashboard and job
+app.UseHangfireDashboard();
+RecurringJob.AddOrUpdate<ISendAttendanceReminderJob>(
+    "attendance-reminder-job",
     job => job.ExecuteAsync(),
-    Cron.Weekly(DayOfWeek.Friday, 15, 0));
+    Cron.Weekly(DayOfWeek.Friday, 18, 0));
 
 app.MapControllers();
-app.Run();
-
-
-
 app.Run();
 

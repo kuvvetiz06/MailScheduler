@@ -21,8 +21,7 @@ namespace MailScheduler.Infrastructure.Authorization
         {
             var httpContext = context.GetHttpContext();
             var header = httpContext.Request.Headers["Authorization"];
-            if (AuthenticationHeaderValue.TryParse(header, out var authHeader)
-                && authHeader.Scheme.Equals("Basic", StringComparison.OrdinalIgnoreCase))
+            if (AuthenticationHeaderValue.TryParse(header, out var authHeader) && authHeader.Scheme.Equals("Basic", StringComparison.OrdinalIgnoreCase))
             {
                 var credentialBytes = Convert.FromBase64String(authHeader.Parameter ?? string.Empty);
                 var credentials = Encoding.UTF8.GetString(credentialBytes).Split(':');

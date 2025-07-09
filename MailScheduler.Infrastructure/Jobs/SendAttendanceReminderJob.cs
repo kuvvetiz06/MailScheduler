@@ -1,8 +1,8 @@
 ﻿using MailScheduler.Application.IJobs;
-using MailScheduler.Domain.Common;
 using MailScheduler.Domain.Entities;
 using MailScheduler.Domain.Enums;
 using MailScheduler.Domain.Interfaces;
+using MailScheduler.Domain.ValueObjects;
 using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
@@ -45,14 +45,28 @@ namespace MailScheduler.Infrastructure.Jobs
 
                     if (!onLeave && !present)
                     {
-                        var prev = await _logRepo.GetByEmployeeWeekAsync(id, start, (int)MailType.MissingAttendanceInitial);
-                        var type = prev != null ? MailType.MissingAttendanceReminder : MailType.MissingAttendanceInitial;
-                        var email = "user@example.com"; // map from id
-                        var subject = "Devamsızlık Hatırlatma";
-                        var body = $"{start:dd.MM.yyyy}-{end:dd.MM.yyyy} arasında {day:dd.MM.yyyy} günü gelmediniz.";
+                        var prevLog = await _logRepo.GetByEmployeeWeekAsync(id, start, (int)MailType.MissingAttendanceInitial);
+                        var type = prevLog != null
+                            ? MailType.MissingAttendanceReminder
+                            : MailType.MissingAttendanceInitial;
+
+                        // TODO: IdentityId'den gerçek e-posta adresini çek
+                        var email = id + "@example.com";
+                        var subject = "Haftalık Devamsızlık Hatırlatma";
+                        var body = $"{start:dd.MM.yyyy} - {end:dd.MM.yyyy} arasında {day:dd.MM.yyyy} günü işe gelmediniz. Lütfen izin formu doldurun veya İK'yı bilgilendirin.";
 
                         await _sender.SendEmailAsync(email, subject, body);
-                        var log = new EmailLog(email, type.ToString(), true, null, id, (int)type, start, end);
+
+                        var log = new EmailLog(
+                            email,
+                            type.ToString(),
+                            success: true,
+                            errorMessage: null,
+                            identityId: id,
+                            mailTypeId: (int)type,
+                            periodStart: start,
+                            periodEnd: end);
+
                         await _logRepo.AddAsync(log);
                     }
                 }
