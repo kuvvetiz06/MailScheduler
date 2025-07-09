@@ -24,6 +24,9 @@ namespace MailScheduler.Infrastructure.Persistence.Configurations
 
             builder.Property(d => d.IsLeave)
                    .IsRequired();
+
+            builder.Property(d => d.IsTravel)
+              .IsRequired();
         }
     }
 }

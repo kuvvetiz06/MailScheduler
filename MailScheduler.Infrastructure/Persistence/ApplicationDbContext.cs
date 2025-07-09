@@ -12,17 +12,21 @@ namespace MailScheduler.Infrastructure.Persistence
         public DbSet<EmailTemplate> EmailTemplates { get; set; } = null!;
         public DbSet<EmailLog> EmailLogs { get; set; } = null!;
         public DbSet<DailyAttendance> DailyAttendances { get; set; } = null!;
+        public DbSet<PendingEmail> PendingEmails { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
             modelBuilder.Entity<EmailTemplate>().HasQueryFilter(e => !e.IsDeleted);
             modelBuilder.Entity<EmailLog>().HasQueryFilter(e => !e.IsDeleted);
             modelBuilder.Entity<DailyAttendance>().HasQueryFilter(d => !d.IsDeleted);
+            modelBuilder.Entity<PendingEmail>().HasQueryFilter(p => !p.IsDeleted);
 
             modelBuilder.ApplyConfiguration(new EmailTemplateConfiguration());
             modelBuilder.ApplyConfiguration(new EmailLogConfiguration());
             modelBuilder.ApplyConfiguration(new DailyAttendanceConfiguration());
+            modelBuilder.ApplyConfiguration(new PendingEmailConfiguration());
         }
     }
 }

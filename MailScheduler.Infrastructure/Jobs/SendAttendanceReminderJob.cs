@@ -1,4 +1,6 @@
-﻿using MailScheduler.Application.IJobs;
+﻿using Hangfire;
+using MailScheduler.Application.IJobs;
+using MailScheduler.Application.Interfaces;
 using MailScheduler.Domain.Common;
 using MailScheduler.Domain.Entities;
 using MailScheduler.Domain.Enums;
@@ -11,18 +13,26 @@ namespace MailScheduler.Infrastructure.Jobs
     {
         private readonly IDailyAttendanceRepository _dailyRepo;
         private readonly IEmailLogRepository _logRepo;
-        private readonly MailScheduler.Application.Interfaces.IEmailSender _sender;
+        private readonly IPendingEmailRepository _pendingRepo;
+        private readonly IEmailSender _sender;
+
+        // Kişi bazlı retry ayarları
+        private const int MaxEmailAttempts = 3;
+        private static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(5);
 
         public SendAttendanceReminderJob(
             IDailyAttendanceRepository dailyRepo,
             IEmailLogRepository logRepo,
-            MailScheduler.Application.Interfaces.IEmailSender sender)
+            IPendingEmailRepository pendingRepo,
+            IEmailSender sender)
         {
             _dailyRepo = dailyRepo;
             _logRepo = logRepo;
+            _pendingRepo = pendingRepo;
             _sender = sender;
         }
 
+        [AutomaticRetry(Attempts = 0)]
         public async Task ExecuteAsync()
         {
             var (start, end) = WeekHelper.GetPreviousWorkWeek(DateTime.Today);
@@ -37,32 +47,54 @@ namespace MailScheduler.Infrastructure.Jobs
                     var rec = records.FirstOrDefault(r => r.IdentityId == id && r.Date.Date == day);
                     bool onLeave = rec?.IsLeave ?? false;
                     bool present = rec?.IsTourniquet ?? false;
+                    bool traveling = rec?.IsTravel ?? false;
 
-                    if (!onLeave && !present)
+                    if (!onLeave && !present && !traveling)
                     {
                         var prevLog = await _logRepo.GetByEmployeeWeekAsync(id, start, (int)MailType.MissingAttendanceInitial);
-                        var type = prevLog != null
-                            ? MailType.MissingAttendanceReminder
-                            : MailType.MissingAttendanceInitial;
+                        var type = prevLog != null ? MailType.MissingAttendanceReminder : MailType.MissingAttendanceInitial;
 
-                        // TODO: IdentityId'den gerçek e-posta adresini çek
                         var email = id + "@example.com";
                         var subject = "Haftalık Devamsızlık Hatırlatma";
-                        var body = $"{start:dd.MM.yyyy} - {end:dd.MM.yyyy} arasında {day:dd.MM.yyyy} günü işe gelmediniz. Lütfen izin formu doldurun veya İK'yı bilgilendirin.";
+                        var body = $"{start:dd.MM.yyyy} - {end:dd.MM.yyyy} arası {day:dd.MM.yyyy} günü devamsızlık yapmış olduğunuz tespit edilmiştir. İşbu devamsızlığınıza yönelik açıklamanızı sunmanız yahut ilgili izin formunu 5 iş günü içerisinde doldurmanız gerektiğini hatırlatırız.";
 
-                        await _sender.SendEmailAsync(email, subject, body);
+                        bool sent = false;
+                        string error = null;
 
-                        var log = new EmailLog(
+                        for (int attempt = 1; attempt <= MaxEmailAttempts; attempt++)
+                        {
+                            try
+                            {
+                                await _sender.SendEmailAsync(email, subject, body);
+                                sent = true;
+                                break;
+                            }
+                            catch (Exception ex)
+                            {
+                                error = ex.Message;
+                                if (attempt < MaxEmailAttempts)
+                                    await Task.Delay(RetryDelay);
+                            }
+                        }
+
+                        if (!sent)
+                        {
+                            // Başarısız olan maili pending tablosuna ekle
+                            var pending = new PendingEmail(email, subject, body);
+                            await _pendingRepo.AddAsync(pending);
+                        }
+
+                        var logEntry = new EmailLog(
                             email,
                             type.ToString(),
-                            success: true,
-                            errorMessage: null,
+                            success: sent,
+                            errorMessage: sent ? null : error,
                             identityId: id,
                             mailTypeId: (int)type,
                             periodStart: start,
                             periodEnd: end);
 
-                        await _logRepo.AddAsync(log);
+                        await _logRepo.AddAsync(logEntry);
                     }
                 }
             }

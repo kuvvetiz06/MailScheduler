@@ -17,6 +17,10 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IDailyAttendanceRepository, DailyAttendanceRepository>();
 builder.Services.AddScoped<ISendAttendanceReminderJob, SendAttendanceReminderJob>();
 
+// Add  PendingEmail repository and job
+builder.Services.AddScoped<IPendingEmailRepository, PendingEmailRepository>();
+builder.Services.AddScoped<IProcessPendingEmailsJob, ProcessPendingEmailsJob>();
+
 // SMTP Email settings and sender
 builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 builder.Services.AddScoped<MailScheduler.Application.Interfaces.IEmailSender, MailScheduler.Infrastructure.Services.SmtpEmailSender>();
@@ -41,7 +45,14 @@ app.UseHangfireDashboard();
 RecurringJob.AddOrUpdate<ISendAttendanceReminderJob>(
     "attendance-reminder-job",
     job => job.ExecuteAsync(),
-    Cron.Weekly(DayOfWeek.Friday, 18, 0));
+    Cron.Weekly(DayOfWeek.Friday, 15, 0));
+
+// Her Cuma 19:00,20:00,21:00,22:00 ve 23:00'te çalýþacak UTC + 3
+RecurringJob.AddOrUpdate<IProcessPendingEmailsJob>(
+    "process-pending-emails-job",
+    job => job.ExecuteAsync(),
+    
+    "0 16,17,18,19,20 * * FRI"); ;
 
 app.MapControllers();
 app.Run();
