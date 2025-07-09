@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailScheduler.Infrastructur
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailScheduler.API", "MailScheduler.API\MailScheduler.API.csproj", "{33B759CE-EFB3-4124-BD63-B9EBE356054D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MailScheduler.Worker", "MailScheduler.Worker\MailScheduler.Worker.csproj", "{B9078C05-36C7-408C-A59B-21A7F1446828}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,18 +69,6 @@ Global
 		{33B759CE-EFB3-4124-BD63-B9EBE356054D}.Release|x64.Build.0 = Release|Any CPU
 		{33B759CE-EFB3-4124-BD63-B9EBE356054D}.Release|x86.ActiveCfg = Release|Any CPU
 		{33B759CE-EFB3-4124-BD63-B9EBE356054D}.Release|x86.Build.0 = Release|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Debug|x64.Build.0 = Debug|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Debug|x86.Build.0 = Debug|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Release|x64.ActiveCfg = Release|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Release|x64.Build.0 = Release|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Release|x86.ActiveCfg = Release|Any CPU
-		{B9078C05-36C7-408C-A59B-21A7F1446828}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
