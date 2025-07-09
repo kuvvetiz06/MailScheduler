@@ -1,5 +1,5 @@
 ﻿using Hangfire;
-using MailScheduler.Application.IJobs;
+using MailScheduler.Application.Jobs;
 using MailScheduler.Application.Interfaces;
 using MailScheduler.Domain.Interfaces;
 using MailScheduler.Infrastructure.Persistence;
@@ -32,7 +32,8 @@ namespace MailScheduler.Infrastructure.Jobs
                 bool success = false;
                 try
                 {
-                    await _sender.SendEmailAsync(email.Recipient, email.Subject, email.Body);
+                    // to, cc, subject, body geçiliyor
+                    await _sender.SendEmailAsync(email.Recipient, email.Cc, email.Subject, email.Body);
                     success = true;
                 }
                 catch { }

@@ -1,5 +1,5 @@
 ﻿using Hangfire;
-using MailScheduler.Application.IJobs;
+using MailScheduler.Application.Jobs;
 using MailScheduler.Application.Interfaces;
 using MailScheduler.Domain.Common;
 using MailScheduler.Domain.Entities;
@@ -12,91 +12,81 @@ namespace MailScheduler.Infrastructure.Jobs
     public class SendAttendanceReminderJob : ISendAttendanceReminderJob
     {
         private readonly IDailyAttendanceRepository _dailyRepo;
+        private readonly IEmailTemplateRepository _templateRepo;
         private readonly IEmailLogRepository _logRepo;
         private readonly IPendingEmailRepository _pendingRepo;
         private readonly IEmailSender _sender;
 
-        // Kişi bazlı retry ayarları
-        private const int MaxEmailAttempts = 3;
-        private static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(5);
-
         public SendAttendanceReminderJob(
             IDailyAttendanceRepository dailyRepo,
+            IEmailTemplateRepository templateRepo,
             IEmailLogRepository logRepo,
             IPendingEmailRepository pendingRepo,
             IEmailSender sender)
         {
             _dailyRepo = dailyRepo;
+            _templateRepo = templateRepo;
             _logRepo = logRepo;
             _pendingRepo = pendingRepo;
             _sender = sender;
         }
 
-        [AutomaticRetry(Attempts = 0)]
+        private static string FillTemplate(string template, DailyAttendance rec, DateTime start, DateTime end)
+        {
+            return template
+                .Replace("{StartDate}", start.ToString("dd.MM.yyyy"))
+                .Replace("{EndDate}", end.ToString("dd.MM.yyyy"))
+                .Replace("{EmployeeName}", $"{rec.Name} {rec.Surname}");
+        }
+
         public async Task ExecuteAsync()
         {
             var (start, end) = WeekHelper.GetPreviousWorkWeek(DateTime.Today);
             var records = await _dailyRepo.GetByDateRangeAsync(start, end);
-            var days = Enumerable.Range(0, 5).Select(i => start.AddDays(i));
 
-            var employees = records.Select(r => r.IdentityId).Distinct();
-            foreach (var id in employees)
+            foreach (var rec in records)
             {
-                foreach (var day in days)
+                if (!rec.IsLeave && !rec.IsTourniquet && !rec.IsTravel)
                 {
-                    var rec = records.FirstOrDefault(r => r.IdentityId == id && r.Date.Date == day);
-                    bool onLeave = rec?.IsLeave ?? false;
-                    bool present = rec?.IsTourniquet ?? false;
-                    bool traveling = rec?.IsTravel ?? false;
+                    var tplUser = await _templateRepo.GetByTypeAsync(MailRecipientType.User);
+                    var tplMgr = await _templateRepo.GetByTypeAsync(MailRecipientType.Manager);
+                    var tplHR = await _templateRepo.GetByTypeAsync(MailRecipientType.HRPartner);
 
-                    if (!onLeave && !present && !traveling)
-                    {
-                        var prevLog = await _logRepo.GetByEmployeeWeekAsync(id, start, (int)MailType.MissingAttendanceInitial);
-                        var type = prevLog != null ? MailType.MissingAttendanceReminder : MailType.MissingAttendanceInitial;
+                    var to = rec.UserMail;
+                    var cc = new List<string> { rec.ManagerMail, rec.HRPartnerMail };
 
-                        var email = id + "@example.com";
-                        var subject = "Haftalık Devamsızlık Hatırlatma";
-                        var body = $"{start:dd.MM.yyyy} - {end:dd.MM.yyyy} arası {day:dd.MM.yyyy} günü devamsızlık yapmış olduğunuz tespit edilmiştir. İşbu devamsızlığınıza yönelik açıklamanızı sunmanız yahut ilgili izin formunu 5 iş günü içerisinde doldurmanız gerektiğini hatırlatırız.";
+                    // User mail
+                    var bodyUser = FillTemplate(tplUser.Body, rec, start, end);
+                    bool sentUser = await SendWithPendingAsync(to, cc, tplUser.Subject, bodyUser);
 
-                        bool sent = false;
-                        string error = null;
+                    // Manager mail (CC: UserMail, HRPartnerMail)
+                    var bodyMgr = FillTemplate(tplMgr.Body, rec, start, end);
+                    bool sentMgr = await SendWithPendingAsync(rec.ManagerMail, null, tplMgr.Subject, bodyMgr);
 
-                        for (int attempt = 1; attempt <= MaxEmailAttempts; attempt++)
-                        {
-                            try
-                            {
-                                await _sender.SendEmailAsync(email, subject, body);
-                                sent = true;
-                                break;
-                            }
-                            catch (Exception ex)
-                            {
-                                error = ex.Message;
-                                if (attempt < MaxEmailAttempts)
-                                    await Task.Delay(RetryDelay);
-                            }
-                        }
+                    // HR Partner mail (CC: UserMail, ManagerMail)
+                    var bodyHR = FillTemplate(tplHR.Body, rec, start, end);
+                    bool sentHR = await SendWithPendingAsync(rec.HRPartnerMail, null, tplHR.Subject, bodyHR);
 
-                        if (!sent)
-                        {
-                            // Başarısız olan maili pending tablosuna ekle
-                            var pending = new PendingEmail(email, subject, body);
-                            await _pendingRepo.AddAsync(pending);
-                        }
-
-                        var logEntry = new EmailLog(
-                            email,
-                            type.ToString(),
-                            success: sent,
-                            errorMessage: sent ? null : error,
-                            identityId: id,
-                            mailTypeId: (int)type,
-                            periodStart: start,
-                            periodEnd: end);
-
-                        await _logRepo.AddAsync(logEntry);
-                    }
+                    // Log kayıtları
+                    await _logRepo.AddAsync(new EmailLog(rec.UserMail, MailRecipientType.User.ToString(), sentUser));
+                    await _logRepo.AddAsync(new EmailLog(rec.ManagerMail, MailRecipientType.Manager.ToString(), sentMgr));
+                    await _logRepo.AddAsync(new EmailLog(rec.HRPartnerMail, MailRecipientType.HRPartner.ToString(), sentHR));
                 }
+            }
+        }
+
+        private async Task<bool> SendWithPendingAsync(string to, IEnumerable<string>? cc, string subject, string body)
+        {
+            try
+            {
+                await _sender.SendEmailAsync(to, cc, subject, body);
+                return true;
+            }
+            catch
+            {
+                var pending = new PendingEmail(to, cc, subject, body);
+                await _pendingRepo.AddAsync(pending);
+                return false;
             }
         }
     }

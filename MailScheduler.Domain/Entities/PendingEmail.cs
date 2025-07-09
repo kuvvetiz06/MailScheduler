@@ -8,11 +8,12 @@ using System.Threading.Tasks;
 namespace MailScheduler.Domain.Entities
 {
     /// <summary>
-    /// Gönderilemeyen e-postaları tutan tablo.
+    /// Gönderilemeyen e-postaları tutan tablo, to ve cc bilgilerini içerir.
     /// </summary>
     public class PendingEmail : BaseEntity
     {
         public string Recipient { get; private set; } = null!;
+        public IEnumerable<string>? Cc { get; private set; }
         public string Subject { get; private set; } = null!;
         public string Body { get; private set; } = null!;
         public int AttemptCount { get; private set; }
@@ -22,10 +23,11 @@ namespace MailScheduler.Domain.Entities
 
         private PendingEmail() { }
 
-        public PendingEmail(string recipient, string subject, string body)
+        public PendingEmail(string recipient, IEnumerable<string>? cc, string subject, string body)
             : base()
         {
             Recipient = recipient;
+            Cc = cc;
             Subject = subject;
             Body = body;
             AttemptCount = 0;

@@ -1,28 +1,26 @@
 ﻿using MailScheduler.Domain.Common;
+using MailScheduler.Domain.Enums;
 
 
 namespace MailScheduler.Domain.Entities
 {
     public class EmailTemplate : BaseEntity
     {
-        public string Name { get; private set; } = null!;
+        public MailRecipientType RecipientType { get; private set; }
         public string Subject { get; private set; } = null!;
         public string Body { get; private set; } = null!;
 
-        private EmailTemplate() : base() { }
+        private EmailTemplate() { }
 
-        public EmailTemplate(string name, string subject, string body) : base()
+        public EmailTemplate(
+            MailRecipientType recipientType,
+            string subject,
+            string body)
+            : base()
         {
-            Name = name;
+            RecipientType = recipientType;
             Subject = subject;
             Body = body;
-        }
-
-        public void UpdateTemplate(string subject, string body)
-        {
-            Subject = subject;
-            Body = body;
-            UpdateModified();
         }
     }
 }

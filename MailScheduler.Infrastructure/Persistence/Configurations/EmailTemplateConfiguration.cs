@@ -10,9 +10,9 @@ namespace MailScheduler.Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<EmailTemplate> builder)
         {
             builder.ToTable("EmailTemplates");
+            builder.HasKey(e => e.Id);
 
-            builder.Property(e => e.Name)
-                   .HasMaxLength(100)
+            builder.Property(e => e.RecipientType)
                    .IsRequired();
 
             builder.Property(e => e.Subject)

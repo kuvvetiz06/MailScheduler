@@ -1,4 +1,5 @@
 ﻿using MailScheduler.Domain.Entities;
+using MailScheduler.Domain.Enums;
 using MailScheduler.Domain.Interfaces;
 using MailScheduler.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +15,6 @@ namespace MailScheduler.Infrastructure.Repositories
     {
         private readonly ApplicationDbContext _context;
         public EmailTemplateRepository(ApplicationDbContext context) => _context = context;
-
-        public async Task<EmailTemplate?> GetByNameAsync(string name) =>
-            await _context.EmailTemplates.FirstOrDefaultAsync(t => t.Name == name);
 
         public async Task AddAsync(EmailTemplate template)
         {
@@ -36,6 +34,12 @@ namespace MailScheduler.Infrastructure.Repositories
             template.MarkDeleted();
             _context.EmailTemplates.Update(template);
             await _context.SaveChangesAsync();
+        }
+        public async Task<EmailTemplate> GetByTypeAsync(MailRecipientType type)
+        {
+            return await _context.EmailTemplates
+                .FirstOrDefaultAsync(t => t.RecipientType == type)
+                ?? throw new KeyNotFoundException($"Template for {type} not found.");
         }
     }
 }

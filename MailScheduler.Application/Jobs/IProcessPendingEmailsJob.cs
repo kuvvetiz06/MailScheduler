@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MailScheduler.Application.IJobs
+namespace MailScheduler.Application.Jobs
 {
     /// <summary>
     /// Pending email retry job interface.

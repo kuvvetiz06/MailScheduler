@@ -18,76 +18,57 @@ namespace MailScheduler.Infrastructure.Services
             _smtp = smtpOptions.Value;
         }
 
-        public async Task SendEmailAsync(string recipient, string subject, string body)
+        /// <inheritdoc />
+        public async Task SendEmailAsync(string to, IEnumerable<string>? cc, string subject, string body)
         {
-            var email = new MimeMessage();
-            // Gönderen adı varsa kullan, yoksa userName
-            var displayName = string.IsNullOrWhiteSpace(_smtp.DisplayName)
-                ? _smtp.UserName
-                : _smtp.DisplayName;
-            email.From.Add(new MailboxAddress(displayName, _smtp.UserName));
-            email.To.Add(MailboxAddress.Parse(recipient));
-            email.Subject = subject;
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_smtp.DisplayName ?? _smtp.UserName, _smtp.UserName));
+            message.To.Add(MailboxAddress.Parse(to));
 
+            if (cc != null)
+            {
+                foreach (var address in cc)
+                {
+                    message.Cc.Add(MailboxAddress.Parse(address));
+                }
+            }
+
+            message.Subject = subject;
             var builder = new BodyBuilder
             {
                 HtmlBody = body,
                 TextBody = StripHtml(body)
             };
-            email.Body = builder.ToMessageBody();
+            message.Body = builder.ToMessageBody();
 
             using var client = new SmtpClient();
-            // Development için (gerekirse)
-            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+            // Geliştirme aşamasında self-signed sertifikalara izin
+            client.ServerCertificateValidationCallback = (sender, cert, chain, errors) => true;
 
-            try
-            {
-                var secureOption = _smtp.EnableSsl
+            var secureSocket = _smtp.EnableSsl
                 ? SecureSocketOptions.StartTls
                 : SecureSocketOptions.Auto;
-                await client.ConnectAsync(_smtp.Host, _smtp.Port, SecureSocketOptions.Auto);
-                await client.AuthenticateAsync(_smtp.UserName, _smtp.Password);
-                await client.SendAsync(email);
-            }
-            catch
-            {
-                throw;
-            }
-            finally
-            {
-                if (client.IsConnected)
-                    await client.DisconnectAsync(true);
-            }
+
+            await client.ConnectAsync(_smtp.Host, _smtp.Port, secureSocket);
+            await client.AuthenticateAsync(_smtp.UserName, _smtp.Password);
+            await client.SendAsync(message);
+
+            if (client.IsConnected)
+                await client.DisconnectAsync(true);
         }
 
-        // Basit HTML stripper; dilerseniz Regex veya HtmlAgilityPack ile geliştirin
         private static string StripHtml(string html)
         {
             var array = new char[html.Length];
-            var arrayIndex = 0;
+            var idx = 0;
             var inside = false;
-
-            foreach (var @let in html)
+            foreach (var ch in html)
             {
-                if (@let == '<')
-                {
-                    inside = true;
-                    continue;
-                }
-
-                if (@let == '>')
-                {
-                    inside = false;
-                    continue;
-                }
-
-                if (!inside)
-                {
-                    array[arrayIndex++] = @let;
-                }
+                if (ch == '<') { inside = true; continue; }
+                if (ch == '>') { inside = false; continue; }
+                if (!inside) array[idx++] = ch;
             }
-
-            return new string(array, 0, arrayIndex);
+            return new string(array, 0, idx);
         }
     }
 }

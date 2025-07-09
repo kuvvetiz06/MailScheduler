@@ -1,5 +1,5 @@
 ﻿
-namespace MailScheduler.Application.IJobs
+namespace MailScheduler.Application.Jobs
 {
   
     public interface ISendAttendanceReminderJob

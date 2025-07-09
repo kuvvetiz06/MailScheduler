@@ -1,5 +1,5 @@
 using Hangfire;
-using MailScheduler.Application.IJobs;
+using MailScheduler.Application.Jobs;
 using MailScheduler.Infrastructure.Extensions;
 using MailScheduler.Infrastructure.Jobs;
 using MailScheduler.Infrastructure.Settings;
