@@ -1,6 +1,5 @@
 ﻿using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Http;
-using Hangfire.AspNetCore;
 using System.Net.Http.Headers;
 using System.Text;
 

@@ -1,4 +1,4 @@
-﻿// MailScheduler.Infrastructure/Services/SmtpEmailSender.cs
+﻿
 using MailScheduler.Application.Interfaces;
 using MailScheduler.Infrastructure.Settings;
 using MailKit.Net.Smtp;

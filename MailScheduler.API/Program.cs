@@ -25,8 +25,17 @@ builder.Services.AddScoped<MailScheduler.Application.Interfaces.IEmailSender, Ma
 builder.Services.AddHangfire(cfg => cfg.UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection")));
 builder.Services.AddHangfireServer();
 
-var app = builder.Build();
 
+
+var app = builder.Build();
+app.MapGet("/", () => Results.Text("Mail Scheduler Services Is Running", "text/plain"))
+   .WithName("ServiceStatus")
+   .WithOpenApi(operation =>
+   {
+       operation.Summary = "Service Status";
+       operation.Description = "All Mail Scheduler  Services Are Working - Try It Services Running!";
+       return operation;
+   });
 // Configure Hangfire Dashboard and job
 app.UseHangfireDashboard();
 RecurringJob.AddOrUpdate<ISendAttendanceReminderJob>(

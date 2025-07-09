@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MailScheduler.Domain.ValueObjects
+namespace MailScheduler.Domain.Common
 {
     /// <summary>
     /// Hafta başlangıcı ve bitiş tarihlerini hesaplayan yardımcı sınıf.

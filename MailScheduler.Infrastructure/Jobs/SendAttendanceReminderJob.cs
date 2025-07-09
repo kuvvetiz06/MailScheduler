@@ -1,14 +1,9 @@
 ﻿using MailScheduler.Application.IJobs;
+using MailScheduler.Domain.Common;
 using MailScheduler.Domain.Entities;
 using MailScheduler.Domain.Enums;
 using MailScheduler.Domain.Interfaces;
-using MailScheduler.Domain.ValueObjects;
-using Microsoft.VisualBasic;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace MailScheduler.Infrastructure.Jobs
 {
