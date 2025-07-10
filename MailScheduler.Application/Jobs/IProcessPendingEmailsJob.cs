@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 
 namespace MailScheduler.Application.Jobs
 {
-    /// <summary>
-    /// Pending email retry job interface.
-    /// </summary>
     public interface IProcessPendingEmailsJob
     {
         Task ExecuteAsync();

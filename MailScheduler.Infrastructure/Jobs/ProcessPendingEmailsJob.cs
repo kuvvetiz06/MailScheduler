@@ -2,9 +2,7 @@
 using MailScheduler.Application.Jobs;
 using MailScheduler.Application.Interfaces;
 using MailScheduler.Domain.Interfaces;
-using MailScheduler.Infrastructure.Persistence;
-using System;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace MailScheduler.Infrastructure.Jobs
 {
@@ -12,37 +10,43 @@ namespace MailScheduler.Infrastructure.Jobs
     {
         private readonly IPendingEmailRepository _pendingRepo;
         private readonly IEmailSender _sender;
+        private readonly ILogger<ProcessPendingEmailsJob> _logger;
 
         public ProcessPendingEmailsJob(
             IPendingEmailRepository pendingRepo,
-            IEmailSender sender)
+            IEmailSender sender,
+            ILogger<ProcessPendingEmailsJob> logger)
         {
             _pendingRepo = pendingRepo;
             _sender = sender;
+            _logger = logger;
         }
 
         [AutomaticRetry(Attempts = 0)]
         public async Task ExecuteAsync()
         {
             var now = DateTime.UtcNow;
+            _logger.LogInformation("ProcessPendingEmailsJob started at {Time}", now);
+
             var pending = (await _pendingRepo.GetPendingAsync()).ToList();
+            _logger.LogInformation("Found {Count} pending emails", pending.Count);
 
             foreach (var email in pending)
             {
-                bool success = false;
                 try
                 {
-                    // to, cc, subject, body geçiliyor
                     await _sender.SendEmailAsync(email.Recipient, email.Cc, email.Subject, email.Body);
-                    success = true;
+                    email.RecordAttempt(true);
+                    _logger.LogInformation("Successfully resent email to {Email}", email.Recipient);
                 }
-                catch { }
-
-                email.RecordAttempt(success);
+                catch (Exception ex)
+                {
+                    email.RecordAttempt(false);
+                    _logger.LogWarning(ex, "Retry failed for email to {Email}. Attempt {AttemptCount}", email.Recipient, email.AttemptCount);
+                }
                 await _pendingRepo.UpdateAsync(email);
             }
 
-            // Eğer Cuma 23:00 son çalışmasındaysak, kalan pending email'leri başarısız olarak işaretle
             if (now.DayOfWeek == DayOfWeek.Friday && now.Hour == 23)
             {
                 var remaining = (await _pendingRepo.GetPendingAsync()).Where(p => !p.IsSuccess).ToList();
@@ -50,8 +54,11 @@ namespace MailScheduler.Infrastructure.Jobs
                 {
                     email.MarkFailed();
                     await _pendingRepo.UpdateAsync(email);
+                    _logger.LogInformation("Marked pending email to {Email} as failed after final retry", email.Recipient);
                 }
             }
+
+            _logger.LogInformation("ProcessPendingEmailsJob finished at {Time}", DateTime.UtcNow);
         }
     }
 }

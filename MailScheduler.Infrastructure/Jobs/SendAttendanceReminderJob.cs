@@ -5,6 +5,7 @@ using MailScheduler.Domain.Common;
 using MailScheduler.Domain.Entities;
 using MailScheduler.Domain.Enums;
 using MailScheduler.Domain.Interfaces;
+using Microsoft.Extensions.Logging;
 
 
 namespace MailScheduler.Infrastructure.Jobs
@@ -16,63 +17,75 @@ namespace MailScheduler.Infrastructure.Jobs
         private readonly IEmailLogRepository _logRepo;
         private readonly IPendingEmailRepository _pendingRepo;
         private readonly IEmailSender _sender;
+        private readonly ILogger<SendAttendanceReminderJob> _logger;
 
         public SendAttendanceReminderJob(
             IDailyAttendanceRepository dailyRepo,
             IEmailTemplateRepository templateRepo,
             IEmailLogRepository logRepo,
             IPendingEmailRepository pendingRepo,
-            IEmailSender sender)
+            IEmailSender sender,
+            ILogger<SendAttendanceReminderJob> logger)
         {
             _dailyRepo = dailyRepo;
             _templateRepo = templateRepo;
             _logRepo = logRepo;
             _pendingRepo = pendingRepo;
             _sender = sender;
-        }
-
-        private static string FillTemplate(string template, DailyAttendance rec, DateTime start, DateTime end)
-        {
-            return template
-                .Replace("{StartDate}", start.ToString("dd.MM.yyyy"))
-                .Replace("{EndDate}", end.ToString("dd.MM.yyyy"))
-                .Replace("{EmployeeName}", $"{rec.Name} {rec.Surname}");
+            _logger = logger;
         }
 
         public async Task ExecuteAsync()
         {
+            _logger.LogInformation("SendAttendanceReminderJob started at {Time}", DateTime.UtcNow);
             var (start, end) = WeekHelper.GetPreviousWorkWeek(DateTime.Today);
             var records = await _dailyRepo.GetByDateRangeAsync(start, end);
+            _logger.LogInformation("Fetched {Count} attendance records between {Start} and {End}", records.Count(), start, end);
 
             foreach (var rec in records)
             {
                 if (!rec.IsLeave && !rec.IsTourniquet && !rec.IsTravel)
                 {
+                    _logger.LogInformation("Processing employee {EmployeeId} for date {Date}", rec.IdentityId, rec.Date);
                     var tplUser = await _templateRepo.GetByTypeAsync(MailRecipientType.User);
                     var tplMgr = await _templateRepo.GetByTypeAsync(MailRecipientType.Manager);
                     var tplHR = await _templateRepo.GetByTypeAsync(MailRecipientType.HRPartner);
 
+                    string ReplacePlaceholders(string template) => template
+                        .Replace("{StartDate}", start.ToString("dd.MM.yyyy"))
+                        .Replace("{EndDate}", end.ToString("dd.MM.yyyy"))
+                        .Replace("{EmployeeName}", $"{rec.Name} {rec.Surname}");
+
                     var to = rec.UserMail;
-                    var cc = new List<string> { rec.ManagerMail, rec.HRPartnerMail };
+                    var ccUser = new List<string> { rec.ManagerMail, rec.HRPartnerMail };
 
-                    // User mail
-                    var bodyUser = FillTemplate(tplUser.Body, rec, start, end);
-                    bool sentUser = await SendWithPendingAsync(to, cc, tplUser.Subject, bodyUser);
+                    bool userSent = await SendWithPendingAsync(
+                        to,
+                        ccUser,
+                        tplUser.Subject,
+                        ReplacePlaceholders(tplUser.Body));
+                    _logger.LogInformation("User email to {Email} sent: {Sent}", to, userSent);
 
-                    // Manager mail (CC: UserMail, HRPartnerMail)
-                    var bodyMgr = FillTemplate(tplMgr.Body, rec, start, end);
-                    bool sentMgr = await SendWithPendingAsync(rec.ManagerMail, null, tplMgr.Subject, bodyMgr);
+                    bool mgrSent = await SendWithPendingAsync(
+                        rec.ManagerMail,
+                        new[] { rec.UserMail, rec.HRPartnerMail },
+                        tplMgr.Subject,
+                        ReplacePlaceholders(tplMgr.Body));
+                    _logger.LogInformation("Manager email to {Email} sent: {Sent}", rec.ManagerMail, mgrSent);
 
-                    // HR Partner mail (CC: UserMail, ManagerMail)
-                    var bodyHR = FillTemplate(tplHR.Body, rec, start, end);
-                    bool sentHR = await SendWithPendingAsync(rec.HRPartnerMail, null, tplHR.Subject, bodyHR);
+                    bool hrSent = await SendWithPendingAsync(
+                        rec.HRPartnerMail,
+                        new[] { rec.UserMail, rec.ManagerMail },
+                        tplHR.Subject,
+                        ReplacePlaceholders(tplHR.Body));
+                    _logger.LogInformation("HRPartner email to {Email} sent: {Sent}", rec.HRPartnerMail, hrSent);
 
-                    // Log kayıtları
-                    await _logRepo.AddAsync(new EmailLog(rec.UserMail, MailRecipientType.User.ToString(), sentUser));
-                    await _logRepo.AddAsync(new EmailLog(rec.ManagerMail, MailRecipientType.Manager.ToString(), sentMgr));
-                    await _logRepo.AddAsync(new EmailLog(rec.HRPartnerMail, MailRecipientType.HRPartner.ToString(), sentHR));
+                    await _logRepo.AddAsync(new EmailLog(rec.UserMail, MailRecipientType.User.ToString(), userSent));
+                    await _logRepo.AddAsync(new EmailLog(rec.ManagerMail, MailRecipientType.Manager.ToString(), mgrSent));
+                    await _logRepo.AddAsync(new EmailLog(rec.HRPartnerMail, MailRecipientType.HRPartner.ToString(), hrSent));
                 }
             }
+            _logger.LogInformation("SendAttendanceReminderJob finished at {Time}", DateTime.UtcNow);
         }
 
         private async Task<bool> SendWithPendingAsync(string to, IEnumerable<string>? cc, string subject, string body)
@@ -82,8 +95,9 @@ namespace MailScheduler.Infrastructure.Jobs
                 await _sender.SendEmailAsync(to, cc, subject, body);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to send email to {Email}. Adding to PendingEmails.", to);
                 var pending = new PendingEmail(to, cc, subject, body);
                 await _pendingRepo.AddAsync(pending);
                 return false;

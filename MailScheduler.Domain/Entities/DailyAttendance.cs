@@ -25,7 +25,7 @@ namespace MailScheduler.Domain.Entities
         public bool IsTourniquet { get; private set; }
         public bool IsLeave { get; private set; }
         public bool IsTravel { get; private set; }
-
+        public bool IsDigital { get; private set; }
         private DailyAttendance() { }
 
         public DailyAttendance(
@@ -38,7 +38,8 @@ namespace MailScheduler.Domain.Entities
             DateTime date,
             bool isTourniquet,
             bool isLeave,
-            bool isTravel)
+            bool isTravel,
+            bool isDigital)
             : base()
         {
             IdentityId = identityId;
@@ -51,16 +52,19 @@ namespace MailScheduler.Domain.Entities
             IsTourniquet = isTourniquet;
             IsLeave = isLeave;
             IsTravel = isTravel;
+            IsDigital = isDigital;
         }
 
         public void UpdateStatus(
             bool isTourniquet,
             bool isLeave,
-            bool isTravel)
+            bool isTravel,
+            bool isDigital)
         {
             IsTourniquet = isTourniquet;
             IsLeave = isLeave;
             IsTravel = isTravel;
+            IsDigital = isDigital;
             UpdateModified();
         }
     }

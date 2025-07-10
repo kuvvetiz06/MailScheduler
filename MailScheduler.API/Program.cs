@@ -5,13 +5,30 @@ using MailScheduler.Infrastructure.Jobs;
 using MailScheduler.Infrastructure.Settings;
 using MailScheduler.Domain.Interfaces;
 using MailScheduler.Infrastructure.Repositories;
+using Serilog.Events;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    // Günlük dönen dosyalara yaz, her gün yeni dosya, 7 gün sakla:
+    .WriteTo.File("Logs/log-.txt",
+                  rollingInterval: RollingInterval.Day,
+                  retainedFileCountLimit: 7,
+                  restrictedToMinimumLevel: LogEventLevel.Information)
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Serilog’u host’a baðla:
+builder.Host.UseSerilog();
 
 builder.Services.AddControllers();
 
 // Infrastructure: DbContext, repos and other services
 builder.Services.AddInfrastructure(builder.Configuration);
+
 
 // Add DailyAttendance repository and job
 builder.Services.AddScoped<IDailyAttendanceRepository, DailyAttendanceRepository>();
