@@ -1,13 +1,7 @@
 using Hangfire;
-using Hangfire.Dashboard;
 using Hangfire.Dashboard.BasicAuthorization;
 using MailScheduler.Application.Jobs;
-using MailScheduler.Domain.Interfaces;
 using MailScheduler.Infrastructure.Extensions;
-using MailScheduler.Infrastructure.Jobs;
-using MailScheduler.Infrastructure.Persistence;
-using MailScheduler.Infrastructure.Repositories;
-using MailScheduler.Infrastructure.Settings;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
@@ -73,7 +67,7 @@ var dashboardOptions = new DashboardOptions
     {
         new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
         {
-            SslRedirect = false,            
+            SslRedirect = false,
             RequireSsl = false,
             LoginCaseSensitive = false,
             Users = new[]
@@ -102,7 +96,7 @@ RecurringJob.AddOrUpdate<ISendAttendanceReminderJob>(
 RecurringJob.AddOrUpdate<IProcessPendingEmailsJob>(
     "process-pending-emails-job",
     job => job.ExecuteAsync(),
-    
+
     "0 16,17,18,19,20 * * FRI"); ;
 
 app.MapControllers();

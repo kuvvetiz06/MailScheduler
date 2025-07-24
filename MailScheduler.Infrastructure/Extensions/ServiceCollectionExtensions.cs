@@ -26,6 +26,7 @@ namespace MailScheduler.Infrastructure.Extensions
             opts.UseSqlServer(configuration.GetConnectionString("AttendanceConnection")),
             ServiceLifetime.Scoped);
 
+
             services.Configure<SmtpSettings>(configuration.GetSection("SmtpSettings"));
             services.Configure<AttendanceSettings>(configuration.GetSection("AttendanceSettings"));
 

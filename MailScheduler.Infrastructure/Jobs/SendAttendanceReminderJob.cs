@@ -149,7 +149,7 @@ namespace MailScheduler.Infrastructure.Jobs
                         subject: userTpl.Subject,
                         body: htmlUser,
                         mailType: MailRecipientType.User);
-                    _logger.LogInformation("MailSendLog - User email to {Email} sent: {Success}", userMail, "True");
+                    _logger.LogInformation("MailSendLog - User email to {Email} sent: {Success}", userMail, userOk);
 
                     //
                     // --- MANAGER MAIL ---
@@ -164,7 +164,7 @@ namespace MailScheduler.Infrastructure.Jobs
                         subject: mgrTpl.Subject,
                         body: htmlMgr,
                         mailType: MailRecipientType.Manager);
-                    _logger.LogInformation("MailSendLog - Manager email to {Email} sent: {Success}", managerMail, "True");
+                    _logger.LogInformation("MailSendLog - Manager email to {Email} sent: {Success}", managerMail, mgrOk);
                 }
                 //
                 // --- HRPARTNER MAIL ---
@@ -179,7 +179,7 @@ namespace MailScheduler.Infrastructure.Jobs
                     subject: hrTpl.Subject,
                     body: htmlHr,
                     mailType: MailRecipientType.HRPartner);
-                _logger.LogInformation("MailSendLog - HRPartner email to {Email} sent: {Success}", hrPartnerMail, "True");
+                _logger.LogInformation("MailSendLog - HRPartner email to {Email} sent: {Success}", hrPartnerMail, hrOk);
 
             }
 
