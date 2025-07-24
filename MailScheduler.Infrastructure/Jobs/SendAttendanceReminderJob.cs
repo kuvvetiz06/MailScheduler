@@ -76,7 +76,7 @@ namespace MailScheduler.Infrastructure.Jobs
                 var workPlace = grp.Key.WorkPlace;
 
                 var missingDays = records.Where(x => x.IdentityId == grp.Key.IdentityId).Select(x => x.Date).OrderBy(d => d).ToList();
-               
+
                 // 5) Eksik gün sayısını hesapla
 
                 if (string.IsNullOrEmpty(userMail))
@@ -149,7 +149,7 @@ namespace MailScheduler.Infrastructure.Jobs
                         subject: userTpl.Subject,
                         body: htmlUser,
                         mailType: MailRecipientType.User);
-                    _logger.LogInformation("User email to {Email} sent: {Success}", userMail, userOk);
+                    _logger.LogInformation("MailSendLog - User email to {Email} sent: {Success}", userMail, "True");
 
                     //
                     // --- MANAGER MAIL ---
@@ -164,7 +164,7 @@ namespace MailScheduler.Infrastructure.Jobs
                         subject: mgrTpl.Subject,
                         body: htmlMgr,
                         mailType: MailRecipientType.Manager);
-                    _logger.LogInformation("Manager email to {Email} sent: {Success}", managerMail, mgrOk);
+                    _logger.LogInformation("MailSendLog - Manager email to {Email} sent: {Success}", managerMail, "True");
                 }
                 //
                 // --- HRPARTNER MAIL ---
@@ -179,9 +179,10 @@ namespace MailScheduler.Infrastructure.Jobs
                     subject: hrTpl.Subject,
                     body: htmlHr,
                     mailType: MailRecipientType.HRPartner);
-                _logger.LogInformation("HRPartner email to {Email} sent: {Success}", hrPartnerMail, hrOk);
+                _logger.LogInformation("MailSendLog - HRPartner email to {Email} sent: {Success}", hrPartnerMail, "True");
 
             }
+
 
             _logger.LogInformation("SendAttendanceReminderJob finished at {Time}", DateTime.UtcNow);
         }

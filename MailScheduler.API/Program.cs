@@ -33,22 +33,22 @@ builder.Services.AddControllers();
 // Infrastructure: DbContext, repos and other services
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// 2) Uzaktaki AttendanceDb baðlamý
-builder.Services.AddDbContext<AttendanceDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("AttendanceConnection")),
-    ServiceLifetime.Scoped);
+
+//builder.Services.AddDbContext<AttendanceDbContext>(opts =>
+//    opts.UseSqlServer(builder.Configuration.GetConnectionString("AttendanceConnection")),
+//    ServiceLifetime.Scoped);
 
 // Add DailyAttendance repository and job
-builder.Services.AddScoped<IDailyAttendanceRepository, DailyAttendanceRepository>();
-builder.Services.AddScoped<ISendAttendanceReminderJob, SendAttendanceReminderJob>();
+//builder.Services.AddScoped<IDailyAttendanceRepository, DailyAttendanceRepository>();
+//builder.Services.AddScoped<ISendAttendanceReminderJob, SendAttendanceReminderJob>();
 
 // Add  PendingEmail repository and job
-builder.Services.AddScoped<IPendingEmailRepository, PendingEmailRepository>();
-builder.Services.AddScoped<IProcessPendingEmailsJob, ProcessPendingEmailsJob>();
+//builder.Services.AddScoped<IPendingEmailRepository, PendingEmailRepository>();
+//builder.Services.AddScoped<IProcessPendingEmailsJob, ProcessPendingEmailsJob>();
 
 // SMTP Email settings and sender
-builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
-builder.Services.AddScoped<MailScheduler.Application.Interfaces.IEmailSender, MailScheduler.Infrastructure.Services.SmtpEmailSender>();
+//builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+//builder.Services.AddScoped<MailScheduler.Application.Interfaces.IEmailSender, MailScheduler.Infrastructure.Services.SmtpEmailSender>();
 
 // Hangfire configuration
 builder.Services.AddHangfire(cfg => cfg.UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection")));
