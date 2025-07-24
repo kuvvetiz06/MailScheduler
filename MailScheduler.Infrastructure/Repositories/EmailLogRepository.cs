@@ -21,10 +21,6 @@ namespace MailScheduler.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        public async Task<EmailLog?> GetByEmployeeWeekAsync(string identityId, DateTime periodStart, int mailTypeId) =>
-            await _context.EmailLogs.FirstOrDefaultAsync(l =>
-                l.IdentityId == identityId &&
-                l.MailTypeId == mailTypeId &&
-                l.PeriodStart == periodStart);
+
     }
 }

@@ -10,11 +10,8 @@ namespace MailScheduler.Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<DailyAttendance> builder)
         {
             builder.ToTable("DailyAttendances");
-            builder.HasKey(d => d.Id);
-
             builder.Property(d => d.IdentityId).HasMaxLength(50).IsRequired();
-            builder.Property(d => d.Name).HasMaxLength(100).IsRequired();
-            builder.Property(d => d.Surname).HasMaxLength(100).IsRequired();
+            builder.Property(d => d.FullName).HasMaxLength(200).IsRequired();            
             builder.Property(d => d.UserMail).HasMaxLength(200).IsRequired();
             builder.Property(d => d.ManagerMail).HasMaxLength(200).IsRequired();
             builder.Property(d => d.HRPartnerMail).HasMaxLength(200).IsRequired();

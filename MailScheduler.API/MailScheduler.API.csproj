@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Hangfire.AspNetCore" Version="1.8.20" />
     <PackageReference Include="Hangfire.Core" Version="1.8.20" />
+    <PackageReference Include="Hangfire.Dashboard.BasicAuthorization" Version="1.0.2" />
     <PackageReference Include="Hangfire.SqlServer" Version="1.8.20" />
     <PackageReference Include="MailKit" Version="4.13.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
@@ -27,5 +28,13 @@
     <ProjectReference Include="..\MailScheduler.Application\MailScheduler.Application.csproj" />
     <ProjectReference Include="..\MailScheduler.Infrastructure\MailScheduler.Infrastructure.csproj" />
   </ItemGroup>
+	<ItemGroup>
+		<Content Include="Templates\Email\**\*.html">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Logs\" />
+	</ItemGroup>
 
 </Project>

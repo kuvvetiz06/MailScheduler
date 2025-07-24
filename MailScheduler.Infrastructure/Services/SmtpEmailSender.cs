@@ -18,11 +18,11 @@ namespace MailScheduler.Infrastructure.Services
             _smtp = smtpOptions.Value;
         }
 
-        /// <inheritdoc />
+
         public async Task SendEmailAsync(string to, IEnumerable<string>? cc, string subject, string body)
         {
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(_smtp.DisplayName ?? _smtp.UserName, _smtp.UserName));
+            message.From.Add(new MailboxAddress(_smtp.DisplayName, _smtp.UserName));
             message.To.Add(MailboxAddress.Parse(to));
 
             if (cc != null)
@@ -50,7 +50,7 @@ namespace MailScheduler.Infrastructure.Services
                 : SecureSocketOptions.Auto;
 
             await client.ConnectAsync(_smtp.Host, _smtp.Port, secureSocket);
-            await client.AuthenticateAsync(_smtp.UserName, _smtp.Password);
+            //await client.AuthenticateAsync(_smtp.UserName, _smtp.Password);
             await client.SendAsync(message);
 
             if (client.IsConnected)

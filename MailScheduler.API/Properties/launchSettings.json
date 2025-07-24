@@ -6,7 +6,6 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "dotnetRunMessages": true,
-      "launchUrl": "hangfire",
       "applicationUrl": "http://localhost:5001"
     },
     "https": {

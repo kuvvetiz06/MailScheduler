@@ -1,12 +1,16 @@
 using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.Dashboard.BasicAuthorization;
 using MailScheduler.Application.Jobs;
+using MailScheduler.Domain.Interfaces;
 using MailScheduler.Infrastructure.Extensions;
 using MailScheduler.Infrastructure.Jobs;
-using MailScheduler.Infrastructure.Settings;
-using MailScheduler.Domain.Interfaces;
+using MailScheduler.Infrastructure.Persistence;
 using MailScheduler.Infrastructure.Repositories;
-using Serilog.Events;
+using MailScheduler.Infrastructure.Settings;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Serilog.Events;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -29,6 +33,10 @@ builder.Services.AddControllers();
 // Infrastructure: DbContext, repos and other services
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// 2) Uzaktaki AttendanceDb baðlamý
+builder.Services.AddDbContext<AttendanceDbContext>(opts =>
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("AttendanceConnection")),
+    ServiceLifetime.Scoped);
 
 // Add DailyAttendance repository and job
 builder.Services.AddScoped<IDailyAttendanceRepository, DailyAttendanceRepository>();
@@ -57,8 +65,34 @@ app.MapGet("/", () => Results.Text("Mail Scheduler Services Is Running", "text/p
        operation.Description = "All Mail Scheduler  Services Are Working - Try It Services Running!";
        return operation;
    });
+
 // Configure Hangfire Dashboard and job
-app.UseHangfireDashboard();
+var dashboardOptions = new DashboardOptions
+{
+    Authorization = new[]
+    {
+        new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
+        {
+            SslRedirect = false,            
+            RequireSsl = false,
+            LoginCaseSensitive = false,
+            Users = new[]
+            {
+                new BasicAuthAuthorizationUser
+                {
+                    Login = builder.Configuration["HangfireSettings:UserName"]!,
+                    PasswordClear = builder.Configuration["HangfireSettings:Password"]!
+                }
+            }
+        })
+    }
+};
+
+
+app.UseHangfireDashboard(
+    pathMatch: "/hangfire",
+    options: dashboardOptions
+);
 RecurringJob.AddOrUpdate<ISendAttendanceReminderJob>(
     "attendance-reminder-job",
     job => job.ExecuteAsync(),

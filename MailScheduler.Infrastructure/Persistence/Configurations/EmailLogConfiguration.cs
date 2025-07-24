@@ -21,6 +21,9 @@ namespace MailScheduler.Infrastructure.Persistence.Configurations
 
             builder.Property(e => e.ErrorMessage)
                    .HasMaxLength(1000);
+
+            builder.Property(e => e.SentMessage)
+                   .HasColumnType("nvarchar(max)");
         }
     }
 }
