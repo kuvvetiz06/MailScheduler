@@ -5,6 +5,7 @@ using MailScheduler.Domain.Entities;
 using MailScheduler.Domain.Enums;
 using MailScheduler.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using Org.BouncyCastle.Ocsp;
 using System;
 using System.IO;
@@ -74,8 +75,10 @@ namespace MailScheduler.Infrastructure.Jobs
                 var hrPartnerMail = grp.Key.HRPartnerMail;
                 var employeeName = grp.Key.FullName;
                 var workPlace = grp.Key.WorkPlace;
+                var identityId = grp.Key.IdentityId;
+                var fullName = grp.Key.FullName;
 
-                var missingDays = records.Where(x => x.IdentityId == grp.Key.IdentityId).Select(x => x.Date).OrderBy(d => d).ToList();
+                var missingDays = records.Where(x => x.IdentityId == identityId).Select(x => x.Date).OrderBy(d => d).ToList();
 
                 // 5) Eksik gün sayısını hesapla
 
@@ -135,52 +138,77 @@ namespace MailScheduler.Infrastructure.Jobs
                 }
 
 
-                // ---USER MAIL-- -
+
                 if (workPlace == "Merkez")
                 {
+                    // ---USER MAIL---
+                    if (!string.IsNullOrWhiteSpace(userMail))
+                    {
 
-                    var userTpl = await _templateRepo.GetByTypeAsync(MailRecipientType.User);
-                    var messageUser = Fill(userTpl.Body);                                // düz metin
-                    var htmlUser = await WrapHtml(userTpl.Body, "UserTemplate.html"); // HTML
-                    bool userOk = await SendWithPendingAsync(
-                        to: userMail,
-                        message: messageUser,
-                         cc: null,
-                        subject: userTpl.Subject,
-                        body: htmlUser,
-                        mailType: MailRecipientType.User);
-                    _logger.LogInformation("MailSendLog - User email to {Email} sent: {Success}", userMail, userOk);
+                        var userTpl = await _templateRepo.GetByTypeAsync(MailRecipientType.User);
+                        var messageUser = Fill(userTpl.Body);
+                        var htmlUser = await WrapHtml(userTpl.Body, "UserTemplate.html");
+                        bool userOk = await SendWithPendingAsync(
+                            to: userMail,
+                            message: messageUser,
+                            cc: null,
+                            subject: userTpl.Subject,
+                            body: htmlUser,
+                            mailType: MailRecipientType.User);
+                        _logger.LogInformation("MailSendLog - User email to {Email} sent: {Success}", userMail, userOk);
 
-                    //
+                 
+                    }
+                    else
+                    {
+                        _logger.LogWarning("UserMail is empty for {Employee} and {IdentityID}. Skipping User email.", employeeName, identityId);
+                        await _logRepo.AddAsync(new EmailLog(fullName + " UserID :" + identityId, "Standard Absence Text", MailRecipientType.User.ToString(), false, "User Mail is not found !", MailRecipientType.User.GetHashCode()));
+                    }
+
                     // --- MANAGER MAIL ---
-                    //
-                    var mgrTpl = await _templateRepo.GetByTypeAsync(MailRecipientType.Manager);
-                    var messageMgr = Fill(mgrTpl.Body);
-                    var htmlMgr = await WrapHtml(mgrTpl.Body, "ManagerTemplate.html");
-                    bool mgrOk = await SendWithPendingAsync(
-                        to: managerMail,
-                        message: messageMgr,
-                        cc: null,
-                        subject: mgrTpl.Subject,
-                        body: htmlMgr,
-                        mailType: MailRecipientType.Manager);
-                    _logger.LogInformation("MailSendLog - Manager email to {Email} sent: {Success}", managerMail, mgrOk);
-                }
-                //
-                // --- HRPARTNER MAIL ---
-                //
-                var hrTpl = await _templateRepo.GetByTypeAsync(MailRecipientType.HRPartner);
-                var messageHr = Fill(hrTpl.Body);
-                var htmlHr = await WrapHtml(hrTpl.Body, "HRPartnerTemplate.html");
-                bool hrOk = await SendWithPendingAsync(
-                    to: hrPartnerMail,
-                    message: messageHr,
-                    cc: null,
-                    subject: hrTpl.Subject,
-                    body: htmlHr,
-                    mailType: MailRecipientType.HRPartner);
-                _logger.LogInformation("MailSendLog - HRPartner email to {Email} sent: {Success}", hrPartnerMail, hrOk);
+                    if (!string.IsNullOrWhiteSpace(managerMail))
+                    {
 
+                        var mgrTpl = await _templateRepo.GetByTypeAsync(MailRecipientType.Manager);
+                        var messageMgr = Fill(mgrTpl.Body);
+                        var htmlMgr = await WrapHtml(mgrTpl.Body, "ManagerTemplate.html");
+                        bool mgrOk = await SendWithPendingAsync(
+                            to: managerMail,
+                            message: messageMgr,
+                            cc: null,
+                            subject: mgrTpl.Subject,
+                            body: htmlMgr,
+                            mailType: MailRecipientType.Manager);
+                        _logger.LogInformation("MailSendLog - Manager email to {Email} sent: {Success}", managerMail, mgrOk);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("ManagerMail is empty for {Employee} and {IdentityID}. Skipping User Manager email.", employeeName, identityId);
+                        await _logRepo.AddAsync(new EmailLog(fullName + " UserID :" + identityId, "Standard Absence Text", MailRecipientType.Manager.ToString(), false, "User Manager Mail is not found !", MailRecipientType.Manager.GetHashCode()));
+                    }
+
+                }
+
+                // --- HRPARTNER MAIL ---
+                if (!string.IsNullOrWhiteSpace(hrPartnerMail))
+                {
+                    var hrTpl = await _templateRepo.GetByTypeAsync(MailRecipientType.HRPartner);
+                    var messageHr = Fill(hrTpl.Body);
+                    var htmlHr = await WrapHtml(hrTpl.Body, "HRPartnerTemplate.html");
+                    bool hrOk = await SendWithPendingAsync(
+                        to: hrPartnerMail,
+                        message: messageHr,
+                        cc: null,
+                        subject: hrTpl.Subject,
+                        body: htmlHr,
+                        mailType: MailRecipientType.HRPartner);
+                    _logger.LogInformation("MailSendLog - HRPartner email to {Email} sent: {Success}", hrPartnerMail, hrOk);
+                }
+                else
+                {
+                    _logger.LogWarning("HRPartnerMail is empty for {Employee} and {IdentityID}. Skipping User HRPartner email.", employeeName, identityId);
+                    await _logRepo.AddAsync(new EmailLog(fullName + " UserID :" + identityId, "Standard Absence Text", MailRecipientType.HRPartner.ToString(), false, "User HRPartner Mail is not found !", MailRecipientType.HRPartner.GetHashCode()));
+                }
             }
 
 

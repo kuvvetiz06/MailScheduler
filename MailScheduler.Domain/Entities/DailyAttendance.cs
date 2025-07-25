@@ -20,7 +20,6 @@ namespace MailScheduler.Domain.Entities
         public string? HRPartnerMail { get; private set; } = string.Empty;
         public string? WorkPlace { get; private set; } = string.Empty;
 
-        // Durum alanları
         public DateTime Date { get; private set; }
         public int IsTourniquet { get; private set; }
         public int IsLeave { get; private set; }
