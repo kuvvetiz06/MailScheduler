@@ -1,17 +1,21 @@
 ﻿using MailScheduler.Domain.Entities;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace MailScheduler.Infrastructure.Persistence.Configurations
 {
-    public class DailyAttendanceConfiguration : IEntityTypeConfiguration<DailyAttendance>
+    public class AttendanceSnapshotConfiguration
+        : IEntityTypeConfiguration<AttendanceSnapshot>
     {
-        public void Configure(EntityTypeBuilder<DailyAttendance> builder)
+        public void Configure(EntityTypeBuilder<AttendanceSnapshot> builder)
         {
-            builder.ToTable("DailyAttendances");
+            // Tablo ve şema
+            builder.ToTable("AttendanceSnapshots");
+
+            builder.HasKey(x => x.Id);
+
             builder.Property(d => d.IdentityId);
-            builder.Property(d => d.FullName);            
+            builder.Property(d => d.FullName);
             builder.Property(d => d.UserMail);
             builder.Property(d => d.ManagerMail);
             builder.Property(d => d.HRPartnerMail);
@@ -20,6 +24,7 @@ namespace MailScheduler.Infrastructure.Persistence.Configurations
             builder.Property(d => d.IsLeave);
             builder.Property(d => d.IsTravel);
             builder.Property(d => d.IsDigital);
+
         }
     }
 }

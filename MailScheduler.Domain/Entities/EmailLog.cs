@@ -9,13 +9,13 @@ namespace MailScheduler.Domain.Entities
 {
     public class EmailLog : BaseEntity
     {
-        public string Recipient { get; private set; } = null!;
-        public string TemplateName { get; private set; } = null!;
+        public string? Recipient { get; private set; } = string.Empty;
+        public string? TemplateName { get; private set; } = null!;
         public DateTime SentAt { get; private set; }
         public bool Success { get; private set; }
         public string? ErrorMessage { get; private set; }
         public int? MailTypeId { get; private set; }
-        public string SentMessage { get; private set; } = null!;
+        public string? SentMessage { get; private set; } = string.Empty;
 
 
         private EmailLog() : base() { }
