@@ -33,5 +33,23 @@ namespace MailScheduler.Domain.Common
             var prevFriday = prevMonday.AddDays(4);
             return (prevMonday, prevFriday);
         }
+
+        //public static (DateTime Start, DateTime End) GetTwoPreviousWorkWeek(DateTime referenceDate)
+        //{
+        //    // 1) Önce bu haftanın Pazartesi’sini bul
+        //    //    DayOfWeek: Sunday=0, Monday=1 ... Saturday=6
+        //    int day = (int)referenceDate.DayOfWeek;
+        //    // Haftanın Pazartesi gününe giden gün sayısı
+        //    int daysSinceMonday = day == 0 ? 6 : day - 1;
+        //    DateTime thisWeekMonday = referenceDate.Date.AddDays(-daysSinceMonday);
+
+        //    // 2) Geçen haftanın Pazartesi’si
+        //    DateTime prevWeekMonday = thisWeekMonday.AddDays(-7);
+
+        //    // 3) Ve Cuma’si (Pazartesi + 4 gün)
+        //    DateTime prevWeekFriday = prevWeekMonday.AddDays(4).AddHours(23).AddMinutes(59).AddSeconds(59);
+
+        //    return (prevWeekMonday, prevWeekFriday);
+        //}
     }
 }
