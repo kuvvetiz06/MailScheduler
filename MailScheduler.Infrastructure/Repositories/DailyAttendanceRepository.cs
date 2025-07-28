@@ -25,7 +25,7 @@ namespace MailScheduler.Infrastructure.Repositories
         {
             var data = await _context.DailyAttendances.Where(d => d.Date >= start.Date && d.Date <= end.Date).AsNoTracking().ToListAsync();
 
-
+            
             if (data.Any())
             {
                 var snapshots = data.Select(d => new AttendanceSnapshot
@@ -47,10 +47,10 @@ namespace MailScheduler.Infrastructure.Repositories
                 _ctx.ChangeTracker.AutoDetectChangesEnabled = false;
                 var bulkConfig = new BulkConfig
                 {
-                    BatchSize = 5000,     
-                    BulkCopyTimeout = 300,      
+                    BatchSize = 5000,
+                    BulkCopyTimeout = 300,
                     UseTempDB = true,
-                    EnableStreaming = true      
+                    EnableStreaming = true
                 };
                 await _ctx.BulkInsertAsync(snapshots, bulkConfig);
                 _ctx.ChangeTracker.AutoDetectChangesEnabled = true;
